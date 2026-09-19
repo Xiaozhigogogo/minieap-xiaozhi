@@ -23,23 +23,32 @@ jobs:
             mingw-w64-x86_64-gcc
             mingw-w64-x86_64-libpcap
 
-      - name: Compile minieap inside MSYS2
+      - name: 🔧 修改config.mk（完全按照官方文档配置）
         shell: msys2 {0}
         run: |
-          # 修改config.mk
+          # Windows：关闭Linux专用sockraw，开启libpcap
           sed -i 's/^MODULE_if_impl_sockraw := 1/MODULE_if_impl_sockraw := 0/' config.mk
           sed -i 's/^MODULE_if_impl_libpcap := 0/MODULE_if_impl_libpcap := 1/' config.mk
+          # 开启锐捷v3插件
           sed -i 's/^MODULE_packet_plugin_rjv3 := 0/MODULE_packet_plugin_rjv3 := 1/' config.mk
+          # 关闭printer调试插件（MinGW编译它会产生非法汇编，官方非必需模块）
+          sed -i 's/^MODULE_packet_plugin_printer := 1/MODULE_packet_plugin_printer := 0/' config.mk
+          # Windows平台关闭ICONV，官方文档提示：无iconv库则置0
           sed -i 's/^ENABLE_ICONV := 1/ENABLE_ICONV := 0/' config.mk
+          # 打印修改后的config.mk，方便排错
+          cat config.mk
 
+      - name: 🛠️ 直接make（官方原文：执行make即可，不加任何额外CFLAGS/LDFLAGS！！）
+        shell: msys2 {0}
+        run: |
           make EXE=minieap.exe
 
-      - name: Copy required dll
+      - name: 📦 复制依赖dll
         shell: msys2 {0}
         run: |
           cp /mingw64/bin/libwinpthread-1.dll .
 
-      - name: Upload artifact
+      - name: 📤 上传产物
         uses: actions/upload-artifact@v4
         with:
           name: minieap-win-x64

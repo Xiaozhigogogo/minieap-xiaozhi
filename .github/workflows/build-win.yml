@@ -24,7 +24,7 @@ jobs:
           sudo apt update
           sudo apt install -y mingw-w64 gcc-mingw-w64-x86-64 make wget unzip
 
-      # 下载mingw版libpcap，Windows编译必须，if_impl_libpcap依赖
+      # 下载mingw版libpcap
       - name: Get libpcap-mingw for cross compile
         run: |
           wget https://www.winpcap.org/install/bin/WpdPack_4_1_2.zip
@@ -32,10 +32,11 @@ jobs:
 
       - name: Cross compile minieap for Windows
         run: |
-          # 修改config.mk：Windows必须启用 if_impl_libpcap，关闭sockraw；开启rjv3插件
+          # Windows: 关闭sockraw，开启libpcap；开启rjv3；【关键：关闭ICONV】
           sed -i 's/^MODULE_if_impl_sockraw := 1/MODULE_if_impl_sockraw := 0/' config.mk
           sed -i 's/^MODULE_if_impl_libpcap := 0/MODULE_if_impl_libpcap := 1/' config.mk
           sed -i 's/^MODULE_packet_plugin_rjv3 := 0/MODULE_packet_plugin_rjv3 := 1/' config.mk
+          sed -i 's/^ENABLE_ICONV := 1/ENABLE_ICONV := 0/' config.mk
 
           make \
             CC=x86_64-w64-mingw32-gcc \

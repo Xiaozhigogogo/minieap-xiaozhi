@@ -25,14 +25,14 @@ jobs:
           sudo apt install -y mingw-w64 gcc-mingw-w64-x86-64 make wget unzip
 
       # 下载mingw版libpcap，Windows编译必须，if_impl_libpcap依赖
-      - name: Get libpcap‑mingw for cross compile
+      - name: Get libpcap-mingw for cross compile
         run: |
           wget https://www.winpcap.org/install/bin/WpdPack_4_1_2.zip
           unzip WpdPack_4_1_2.zip -d wpdpack
 
       - name: Cross compile minieap for Windows
         run: |
-        # 修改config.mk：Windows必须启用 if_impl_libpcap，关闭sockraw；开启rjv3插件
+          # 修改config.mk：Windows必须启用 if_impl_libpcap，关闭sockraw；开启rjv3插件
           sed -i 's/^MODULE_if_impl_sockraw := 1/MODULE_if_impl_sockraw := 0/' config.mk
           sed -i 's/^MODULE_if_impl_libpcap := 0/MODULE_if_impl_libpcap := 1/' config.mk
           sed -i 's/^MODULE_packet_plugin_rjv3 := 0/MODULE_packet_plugin_rjv3 := 1/' config.mk
@@ -41,7 +41,8 @@ jobs:
             CC=x86_64-w64-mingw32-gcc \
             EXE=minieap.exe \
             CFLAGS="-I${PWD}/wpdpack/Include" \
-            LDFLAGS="-L${PWD}/wpdpack/Lib/x64"
+            LDFLAGS="-L${PWD}/wpdpack/Lib/x64" \
+            LIBS="-lwpcap -lws2_32"
 
       - name: Upload exe
         uses: actions/upload-artifact@v4

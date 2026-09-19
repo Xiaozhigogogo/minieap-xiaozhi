@@ -1,0 +1,32 @@
+name: Build minieap Windows x86_64
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch: # 网页手动触发
+
+jobs:
+  build-windows:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y cmake mingw-w64 gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 libssl-dev
+
+      - name: Cross compile with MinGW64
+        run: |
+          mkdir build-win
+          cd build-win
+          cmake .. \
+            -DCMAKE_TOOLCHAIN_FILE=/usr/x86_64-w64-mingw32/lib/cmake/mingw64.cmake \
+            -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+
+      - name: Upload minieap.exe as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: minieap-win-x64
+          path: build-win/minieap.exe

@@ -11,31 +11,40 @@ jobs:
       - name: Checkout source code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # 关闭浅克隆，确保完整拉源码，防止丢文件
+          fetch-depth: 0
 
-      - name: Show dir and files (debug)
+      - name: List source files
         run: |
           pwd
           ls -la
-          ls -la CMakeLists.txt || echo "!!! Missing CMakeLists.txt !!!"
+          cat config.mk
 
-      - name: Install build dependencies
+      - name: Install build tools
         run: |
           sudo apt update
-          sudo apt install -y cmake mingw-w64 gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 libssl-dev
+          sudo apt install -y mingw-w64 gcc-mingw-w64-x86-64 make wget unzip
 
-      - name: Cross compile with MinGW64
+      # 下载mingw版libpcap，Windows编译必须，if_impl_libpcap依赖
+      - name: Get libpcap‑mingw for cross compile
         run: |
-          mkdir -p build-win
-          cd build-win
-          pwd
-          cmake .. \
-            -DCMAKE_TOOLCHAIN_FILE=/usr/x86_64-w64-mingw32/lib/cmake/mingw64.cmake \
-            -DCMAKE_BUILD_TYPE=Release
-          make -j$(nproc)
+          wget https://www.winpcap.org/install/bin/WpdPack_4_1_2.zip
+          unzip WpdPack_4_1_2.zip -d wpdpack
 
-      - name: Upload minieap.exe as artifact
+      - name: Cross compile minieap for Windows
+        run: |
+        # 修改config.mk：Windows必须启用 if_impl_libpcap，关闭sockraw；开启rjv3插件
+          sed -i 's/^MODULE_if_impl_sockraw := 1/MODULE_if_impl_sockraw := 0/' config.mk
+          sed -i 's/^MODULE_if_impl_libpcap := 0/MODULE_if_impl_libpcap := 1/' config.mk
+          sed -i 's/^MODULE_packet_plugin_rjv3 := 0/MODULE_packet_plugin_rjv3 := 1/' config.mk
+
+          make \
+            CC=x86_64-w64-mingw32-gcc \
+            EXE=minieap.exe \
+            CFLAGS="-I${PWD}/wpdpack/Include" \
+            LDFLAGS="-L${PWD}/wpdpack/Lib/x64"
+
+      - name: Upload exe
         uses: actions/upload-artifact@v4
         with:
           name: minieap-win-x64
-          path: build-win/minieap.exe
+          path: minieap.exe

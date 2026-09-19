@@ -10,8 +10,6 @@ jobs:
     steps:
       - name: Checkout source code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Setup MSYS2
         uses: msys2/setup-msys2@v2
@@ -23,22 +21,20 @@ jobs:
             mingw-w64-x86_64-gcc
             mingw-w64-x86_64-libpcap
 
-      - name: 修改config.mk
+      - name: Verify config.mk
         shell: msys2 {0}
         run: |
-          sed -i 's/MODULE_if_impl_sockraw := 1/MODULE_if_impl_sockraw := 0/' config.mk
-          sed -i 's/MODULE_if_impl_libpcap := 0/MODULE_if_impl_libpcap := 1/' config.mk
-          sed -i 's/MODULE_packet_plugin_rjv3 := 0/MODULE_packet_plugin_rjv3 := 1/' config.mk
-          sed -i 's/MODULE_packet_plugin_printer := 1/MODULE_packet_plugin_printer := 0/' config.mk
-          sed -i 's/ENABLE_ICONV := 1/ENABLE_ICONV := 0/' config.mk
-          cat config.mk
+          echo "=== PLUGIN_MODULES ==="
+          grep -A5 "PLUGIN_MODULES" config.mk
+          echo "=== ENABLE_ICONV ==="
+          grep ENABLE_ICONV config.mk
 
-      - name: make
+      - name: Build minieap
         shell: msys2 {0}
         run: |
           make EXE=minieap.exe
 
-      - name: Copy dll
+      - name: Copy runtime dll
         shell: msys2 {0}
         run: |
           cp /mingw64/bin/libwinpthread-1.dll .

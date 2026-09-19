@@ -2,7 +2,7 @@ name: Build minieap Windows x86_64
 on:
   push:
     branches: [ main ]
-  workflow_dispatch: # 网页手动触发
+  workflow_dispatch:
 
 jobs:
   build-windows:
@@ -10,6 +10,14 @@ jobs:
     steps:
       - name: Checkout source code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # 关闭浅克隆，确保完整拉源码，防止丢文件
+
+      - name: Show dir and files (debug)
+        run: |
+          pwd
+          ls -la
+          ls -la CMakeLists.txt || echo "!!! Missing CMakeLists.txt !!!"
 
       - name: Install build dependencies
         run: |
@@ -18,8 +26,9 @@ jobs:
 
       - name: Cross compile with MinGW64
         run: |
-          mkdir build-win
+          mkdir -p build-win
           cd build-win
+          pwd
           cmake .. \
             -DCMAKE_TOOLCHAIN_FILE=/usr/x86_64-w64-mingw32/lib/cmake/mingw64.cmake \
             -DCMAKE_BUILD_TYPE=Release
